@@ -1,0 +1,17 @@
+name: terraform-floci-lab
+
+services:
+  floci:
+    image: floci/floci:2.1.0
+    ports:
+      - "127.0.0.1:4566:4566"
+    environment:
+      FLOCI_DEFAULT_REGION: us-east-1
+      FLOCI_BASE_URL: http://localhost:4566
+      FLOCI_STORAGE_MODE: persistent
+      FLOCI_STORAGE_PERSISTENT_PATH: /app/data
+    volumes:
+      - floci-data:/app/data
+
+volumes:
+  floci-data:

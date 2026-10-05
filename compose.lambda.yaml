@@ -1,0 +1,6 @@
+# Enable in Chapter 07. Docker socket access lets Floci launch Lambda containers.
+services:
+  floci:
+    user: "0:0"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

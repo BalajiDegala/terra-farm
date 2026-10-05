@@ -1,0 +1,28 @@
+# Terraform working files and local state (state may contain secrets).
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!terraform.tfvars.example
+
+# Generated artifacts and project-local tools.
+build/
+generated/
+.tools/
+.workshop/
+dist/
+.chapter.json
+lab/
+state-bootstrap/
+data/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+
+# Commit .terraform.lock.hcl when terraform init creates it.

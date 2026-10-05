@@ -1,0 +1,68 @@
+name: Workshop validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chapters:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - id: version
+        run: echo "value=$(cat .terraform-version)" >> "$GITHUB_OUTPUT"
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ steps.version.outputs.value }}
+          terraform_wrapper: false
+      - run: python scripts/check_workshop.py
+      - run: python scripts/package_workshop.py
+
+  integration:
+    needs: chapters
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - id: version
+        run: echo "value=$(cat .terraform-version)" >> "$GITHUB_OUTPUT"
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ steps.version.outputs.value }}
+          terraform_wrapper: false
+      - name: Start local emulator and prepare Lambda runtime
+        run: |
+          aws --version
+          docker compose -f compose.yaml -f compose.lambda.yaml config --quiet
+          docker compose -f compose.yaml -f compose.lambda.yaml up -d --wait floci
+          docker pull public.ecr.aws/lambda/python:3.12
+      - name: Exercise chapters, state, backend, and cleanup
+        run: python scripts/test_integration.py --run
+      - name: Show emulator diagnostics on failure
+        if: failure()
+        run: docker compose logs --tail 100 floci
+      - name: Stop local emulator
+        if: always()
+        run: docker compose -f compose.yaml -f compose.lambda.yaml stop floci
